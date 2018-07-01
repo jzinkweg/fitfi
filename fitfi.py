@@ -5,6 +5,15 @@ class Tree(object):
         self.right = None
         self.data = None
 
+    def done(self):
+        if self.data:
+            return self.data.get('done', False)
+        if self.left and not self.left.done():
+            return False
+        if self.right and not self.right.done():
+            return False
+        return True
+
     def __str__(self):
         return str(self.data) + " left: " + str(self.left) + ", right: " + str(self.right)
 
@@ -26,13 +35,16 @@ def find_leafs(root, root_cost):
         cost = root_cost
 
     leafs = []
+    if root.done():
+        return leafs
+
     if root.left:
         leafs += find_leafs(root.left, cost)
 
     if root.right:
         leafs += find_leafs(root.right, cost)
 
-    if not root.left and not root.right:
+    if (not root.left or root.left.done()) and (not root.right or root.right.done()):
         leafs += (root.data, cost)
 
     return leafs
@@ -62,6 +74,7 @@ for task in tasks:
          depTask['node'].parent = extraNode
 
 root = tasks[0]['node']
+
 leafs = find_leafs(root, 0)
 
 print leafs
