@@ -1,21 +1,26 @@
 class Tree(object):
     def __init__(self):
         self.parent = None
-        self.left = None
-        self.right = None
+        self.children = list()
         self.data = None
 
     def done(self):
-        if self.data:
-            return self.data.get('done', False)
-        if self.left and not self.left.done():
-            return False
-        if self.right and not self.right.done():
-            return False
+        return self.data.get('done', False)
+
+    def children_done(self):
+        for child in self.children:
+            if not child.done():
+                return False
         return True
 
     def __str__(self):
-        return str(self.data) + " left: " + str(self.left) + ", right: " + str(self.right)
+        return str(self.data) + " : " + str(self.children) + ""
+
+    def __repr__(self):
+        return self.__str__()
+
+    def add_child(self, node):
+        self.children.append(node)
 
 tasks = [{'id': 'schroten', 'depends': ['weighed-stuff'], 'requires': ['malt-mill', 'bucket'], 'duration': 10},
         {'id': 'weighed-stuff', 'depends': ['weighed-pils', 'weighed-munich'], 'requires': ['weigher', 'scoop']},
@@ -29,22 +34,16 @@ def find_def(lijstje, key):
     return None
 
 def find_leafs(root, root_cost):
-    if root.data:
-        cost = root_cost + root.data.get('duration', 0)
-    else:
-        cost = root_cost
+    cost = root_cost + root.data.get('duration', 0)
 
     leafs = []
     if root.done():
         return leafs
 
-    if root.left:
-        leafs += find_leafs(root.left, cost)
+    for child in root.children:
+        leafs += find_leafs(child, cost)
 
-    if root.right:
-        leafs += find_leafs(root.right, cost)
-
-    if (not root.left or root.left.done()) and (not root.right or root.right.done()):
+    if not leafs:
         leafs += (root.data, cost)
 
     return leafs
@@ -55,23 +54,10 @@ for task in tasks:
       task['node'].data = task
     for dep in task['depends']:
       depTask = find_def(tasks, dep)
-      if depTask.get('node', None) == None:
-        depTask['node'] = Tree()
-        depTask['node'].data = depTask
-      if task['node'].left == None:
-         task['node'].left = depTask['node']
-         depTask['node'].parent = task['node']
-      elif task['node'].right == None:
-         task['node'].right = depTask['node']
-         depTask['node'].parent = task['node']
-      else:
-         extraNode = Tree()
-         extraNode.parent = task['node']
-         extraNode.left = task['node'].right
-         task['node'].right.parent = extraNode
-         task['node'].right = extraNode
-         extraNode.right = depTask['node']
-         depTask['node'].parent = extraNode
+      depTask['node'] = Tree()
+      depTask['node'].data = depTask
+      depTask['node'].parent = task['node']
+      task['node'].add_child(depTask['node'])
 
 root = tasks[0]['node']
 
